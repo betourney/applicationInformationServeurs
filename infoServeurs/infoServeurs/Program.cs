@@ -11,7 +11,7 @@ namespace infoServeurs
     {
         static void Main(string[] args)
         {
-            Console.WriteLine();
+            Console.WriteLine(test);
             Console.WriteLine("UserName:{0}", Environment.UserDomainName);
             Console.ReadLine();
         }
