@@ -11,7 +11,7 @@ namespace infoServeurs
         static void Main(string[] args)
         {
 
-
+            decimal la = 0;
         }
     }
 }
