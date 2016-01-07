@@ -98,6 +98,7 @@ namespace infoServeurs
                 return result;
             }
         }
+        //
 
         static void Main(string[] args)
         {
@@ -106,13 +107,20 @@ namespace infoServeurs
             var userIp = Dns.GetHostEntry(Environment.UserDomainName).AddressList[1].ToString();
             Console.WriteLine(userIp);
             Console.ReadLine();
+
+            // Write the string to a file.
+            System.IO.StreamWriter file = new System.IO.StreamWriter("test.txt",true);
+            file.WriteLine("User Domain name: {0} User IP: {1}", Environment.UserDomainName, userIp);
             string[] computers = GetComputers();
 
             foreach (string computer in computers)
             {
                 Console.WriteLine(computer);
+                file.WriteLine("Computer : {0} \n", computer);
             }
             Console.ReadLine();
+
+            file.Close();
 
         }
     }
