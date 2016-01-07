@@ -77,7 +77,6 @@ namespace infoServeurs
 
             return (string[])computers.ToArray(typeof(string));
         }
-        //
 
         //
         public static bool PingIP
