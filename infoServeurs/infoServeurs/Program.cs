@@ -12,6 +12,7 @@ using System.Runtime.InteropServices;
 using System.Security;
 using System.Net.NetworkInformation;
 using System.Collections;
+using System.IO;
 
 namespace infoServeurs
 {
@@ -98,10 +99,36 @@ namespace infoServeurs
                 return result;
             }
         }
-        //
 
+        /*
         static void Main(string[] args)
         {
+
+            string sURL;
+                sURL = @"http://10.26.204.8/wsinfserv/index.php/home/test"; //http://www.microsoft.com http://10.26.204.8/wsinfserv
+
+            WebRequest wrGETURL;
+                wrGETURL = WebRequest.Create(sURL);
+
+                WebProxy myProxy = new WebProxy("http://10.254.4.1", 80);
+                myProxy.BypassProxyOnLocal = true;
+                Stream objStream;
+                objStream = wrGETURL.GetResponse().GetResponseStream();
+
+                StreamReader objReader = new StreamReader(objStream);
+
+                string sLine = "";
+                int i = 0;
+
+                while (sLine != null)
+            {
+                i++;
+                sLine = objReader.ReadLine();
+                if (sLine != null)
+                    Console.WriteLine("{0}:{1}", i, sLine);
+            }
+            Console.ReadLine();
+
             Console.WriteLine(PingIP);
             Console.WriteLine("UserName:{0}", Environment.UserDomainName);
             var userIp = Dns.GetHostEntry(Environment.UserDomainName).AddressList[1].ToString();
@@ -122,6 +149,6 @@ namespace infoServeurs
 
             file.Close();
 
-        }
+        }*/
     }
 }
