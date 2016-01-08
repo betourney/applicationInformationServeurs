@@ -190,7 +190,34 @@ namespace essaiRecupDonneesReseaux
                 }
                 Console.ReadLine();
 
-                
+                Console.WriteLine("--------------lecture dans un fichier-----------------");
+
+                String line;
+                try
+                {
+                    //Pass the file path and file name to the StreamReader constructor 
+                    StreamReader streamR = new StreamReader("C:\\Users\\yoann\\Documents\\exemple.txt");
+
+                    //Lire la premiere ligne du fichier Sample.txt 
+                    line = streamR.ReadLine();
+
+                    //Continuer la lecture jusqu'a la fin du fichier 
+                    while (line != null)
+                    {
+                        char delimitChars = ';';
+                        Console.WriteLine("Original text: '{0}'", line);
+                        string[] mot = text.Split(delimitChars);
+
+                        foreach (string value in mot)
+                        {
+                            Console.WriteLine(value);
+                        }
+
+                        //write the lie to console window 
+                        Console.WriteLine(line);
+                        //lecture du ligne du texte 
+                        line = streamR.ReadLine();
+                    }
 
                     //Fermiture du fichier 
                     streamR.Close();
