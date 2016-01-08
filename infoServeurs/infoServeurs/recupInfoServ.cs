@@ -179,10 +179,10 @@ namespace essaiRecupDonneesReseaux
                 //char[] delimiterChars = { ' ', ',', '.', ':', '\t' };  |-> defini les delimiter utiliser exemple => , ou ; ou . ou etc..
                 char[] delimiterChars = { ';' };
                 string text = "one;two;three;four;five;six;seven";
-                System.Console.WriteLine("Original text: '{0}'", text);
+                Console.WriteLine("Original text: '{0}'", text);
 
                 string[] words = text.Split(delimiterChars);
-                System.Console.WriteLine("{0} words in text:", words.Length);
+                Console.WriteLine("{0} words in text:", words.Length);
 
                 foreach (string s in words)
                 {
@@ -190,25 +190,7 @@ namespace essaiRecupDonneesReseaux
                 }
                 Console.ReadLine();
 
-                Console.WriteLine("--------------lecture dans un fichier-----------------");
-
-                String line;
-                try
-                {
-                    //Pass the file path and file name to the StreamReader constructor 
-                    StreamReader streamR = new StreamReader("C:\\Users\\yoann\\Documents\\exemple.txt");
-
-                    //Lire la premiere ligne du fichier Sample.txt 
-                    line = streamR.ReadLine();
-
-                    //Continuer la lecture jusqu'a la fin du fichier 
-                    while (line != null)
-                    {
-                        //write the lie to console window 
-                        Console.WriteLine(line);
-                        //lecture du ligne du texte 
-                        line = streamR.ReadLine();
-                    }
+                
 
                     //Fermiture du fichier 
                     streamR.Close();
