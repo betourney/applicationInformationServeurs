@@ -2,18 +2,21 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.IO;
 using System.Linq;
 using System.Management;
 using System.Net;
 using System.Net.NetworkInformation;
+using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Security;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
-namespace infoServeurs
+namespace essaiRecupDonneesReseaux
 {
-    class recupInfoServ
+    class Program
     {
         [StructLayout(LayoutKind.Sequential)]
         public struct _SERVER_INFO_100
@@ -114,16 +117,14 @@ namespace infoServeurs
                 Console.WriteLine(userIp);
                 Console.ReadLine();
 
-                Console.WriteLine("--------------Liste des pc sur le serveurs-----------------");
+                Console.WriteLine("--------------Liste des machines sur le serveurs-----------------");
                 string[] computers = GetComputers();
                 foreach (string computer in computers)
                 {
                     Console.WriteLine(computer);
                 }
                 Console.ReadLine();
-
-
-                //--------------Connection Serveur-----------------
+                //--------------Connection Serveur-----------------//
                 //information pour ce connecter au serveur
                 string sUserName = "admini";
                 string sPwd = "6gdp9";
@@ -132,10 +133,9 @@ namespace infoServeurs
                 opt.Username = sUserName;
                 opt.Password = sPwd;
                 // connection au serveur
-                ManagementScope scope = new ManagementScope(@"\\10.26.204.1\root\cimv2", opt);//serveur
+                ManagementScope scope = new ManagementScope(@"\\10.26.204.1\root\cimv2", opt);// |-> recherche le serveur - remplacer par la recherche d'id
+                                                                                              // si l'adresse change recuperer le mot de passe et l'identifiant
                 scope.Connect();
-
-
 
                 Console.WriteLine("--------------Liste des services du serveurs-----------------");
                 //declaration des objets
@@ -155,7 +155,8 @@ namespace infoServeurs
                     Console.WriteLine(serviceServeurs);
                 }
                 Console.ReadLine();
-                Console.WriteLine("--------------win32_services -> Caption (properties)-----------------");
+
+                Console.WriteLine("--------------Win32_services -> Caption (properties)-----------------");
                 //declaration des objets
                 ManagementPath mgmtPathService = new ManagementPath("Win32_Service");
                 ManagementClass classObjService = new ManagementClass(null, mgmtPathService, null);
@@ -169,9 +170,59 @@ namespace infoServeurs
 
                 foreach (ManagementObject moService in mocService)
                 {
-                    Console.WriteLine(moService["Caption"].ToString());
+                    Console.WriteLine(moService["Name"].ToString() + " " + moService["ErrorControl"].ToString());
                 }
                 Console.ReadLine();
+
+                Console.WriteLine("-------------- utilisation de la methode split-----------------");
+
+                //char[] delimiterChars = { ' ', ',', '.', ':', '\t' };  |-> defini les delimiter utiliser exemple => , ou ; ou . ou etc..
+                char[] delimiterChars = { ';' };
+                string text = "one;two;three;four;five;six;seven";
+                System.Console.WriteLine("Original text: '{0}'", text);
+
+                string[] words = text.Split(delimiterChars);
+                System.Console.WriteLine("{0} words in text:", words.Length);
+
+                foreach (string s in words)
+                {
+                    System.Console.WriteLine(s);
+                }
+                Console.ReadLine();
+
+                Console.WriteLine("--------------lecture dans un fichier-----------------");
+
+                String line;
+                try
+                {
+                    //Pass the file path and file name to the StreamReader constructor 
+                    StreamReader streamR = new StreamReader("C:\\Users\\yoann\\Documents\\exemple.txt");
+
+                    //Lire la premiere ligne du fichier Sample.txt 
+                    line = streamR.ReadLine();
+
+                    //Continuer la lecture jusqu'a la fin du fichier 
+                    while (line != null)
+                    {
+                        //write the lie to console window 
+                        Console.WriteLine(line);
+                        //lecture du ligne du texte 
+                        line = streamR.ReadLine();
+                    }
+
+                    //Fermiture du fichier 
+                    streamR.Close();
+                    Console.ReadLine();
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine("Exception: " + e.Message);
+                }
+                finally
+                {
+                    Console.WriteLine("Executing finally block.");
+                }
+                System.Console.ReadKey();
 
                 Console.WriteLine("--------------Nom , Capaciter et espace des disques du serveur-----------------");
                 //declaration des objets
@@ -187,7 +238,7 @@ namespace infoServeurs
 
                 foreach (ManagementObject moLogicalDisk in mocLogicalDisk)
                 {
-                    Console.WriteLine(moLogicalDisk["Name"].ToString() + " " + moLogicalDisk["FreeSpace"].ToString() + " " + moLogicalDisk["Size"].ToString());
+                    Console.WriteLine("Nom : " + moLogicalDisk["Name"].ToString() + " Espace libre : " + moLogicalDisk["FreeSpace"].ToString() + " Capaciter : " + moLogicalDisk["Size"].ToString());
                 }
                 Console.ReadLine();
             }
