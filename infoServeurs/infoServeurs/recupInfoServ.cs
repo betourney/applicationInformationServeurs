@@ -106,7 +106,7 @@ namespace essaiRecupDonneesReseaux
             }
         }
 
-        public static void Main(string[] args)
+       /* public static void Main(string[] args)
         {
             try
             {
@@ -264,6 +264,6 @@ namespace essaiRecupDonneesReseaux
                 Console.ReadLine();
             }
             #endregion
-        }
+        }*/
     }
 }

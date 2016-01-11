@@ -78,8 +78,44 @@ namespace infoServeurs
 
             return (string[])computers.ToArray(typeof(string));
         }
+        //fonction d'envoi de données au web service; affiche la réponse de la requete http dans la console
+        public static bool SendDataToServ(string data)
+        {
+            string sURL;
+            sURL = @"http://10.26.204.8/wsinfserv/index.php/recup/"+data; 
+            //http://www.microsoft.com http://10.26.204.8/wsinfserv
+            try
+            {
+                WebRequest wrGETURL;
+                wrGETURL = WebRequest.Create(sURL);
 
+                WebProxy myProxy = new WebProxy("http://10.254.4.1", 80);//by pass le proxy
+                myProxy.BypassProxyOnLocal = true;
+                Stream objStream;
+                objStream = wrGETURL.GetResponse().GetResponseStream();
+
+                StreamReader objReader = new StreamReader(objStream);
+
+                string sLine = "";
+                int i = 0;
+
+                while (sLine != null)
+                {
+                    i++;
+                    sLine = objReader.ReadLine();
+                    if (sLine != null)
+                        Console.WriteLine("{0}:{1}", i, sLine);
+                }
+                Console.ReadLine();
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
         //
+
         public static bool PingIP
         {
             get
@@ -100,35 +136,14 @@ namespace infoServeurs
             }
         }
 
+    
+        static void Main(string[] args)
+        {
+            SendDataToServ("Madata_test_test2_0");
+        }
         /*
         static void Main(string[] args)
         {
-
-            string sURL;
-                sURL = @"http://10.26.204.8/wsinfserv/index.php/home/test"; //http://www.microsoft.com http://10.26.204.8/wsinfserv
-
-            WebRequest wrGETURL;
-                wrGETURL = WebRequest.Create(sURL);
-
-                WebProxy myProxy = new WebProxy("http://10.254.4.1", 80);
-                myProxy.BypassProxyOnLocal = true;
-                Stream objStream;
-                objStream = wrGETURL.GetResponse().GetResponseStream();
-
-                StreamReader objReader = new StreamReader(objStream);
-
-                string sLine = "";
-                int i = 0;
-
-                while (sLine != null)
-            {
-                i++;
-                sLine = objReader.ReadLine();
-                if (sLine != null)
-                    Console.WriteLine("{0}:{1}", i, sLine);
-            }
-            Console.ReadLine();
-
             Console.WriteLine(PingIP);
             Console.WriteLine("UserName:{0}", Environment.UserDomainName);
             var userIp = Dns.GetHostEntry(Environment.UserDomainName).AddressList[1].ToString();
