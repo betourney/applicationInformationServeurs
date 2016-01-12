@@ -47,14 +47,7 @@ namespace essaiRecupDonneesReseaux
         const int SV_TYPE_WORKSTATION = 1;
         const int SV_TYPE_SERVER = 2;
 
-        #region CONSTANTES OCTET
-
-        const ulong GIGA_OCTETS = 1 << 30;
-        const ulong MEGA_OCTETS = 1 << 20;
-        const ulong KILO_OCTETS = 1 << 10;
-
-        #endregion
-
+        //methodes
         public static string[] GetComputers()
         {
             ArrayList computers = new ArrayList();
@@ -85,7 +78,6 @@ namespace essaiRecupDonneesReseaux
 
             return (string[])computers.ToArray(typeof(string));
         }
-        //
         public static bool PingIP
         {
             get
@@ -105,18 +97,76 @@ namespace essaiRecupDonneesReseaux
                 return result;
             }
         }
-
-       /* public static void Main(string[] args)
+        public static IEnumerable<string> EnumerateFiles(string path, string searchPattern, SearchOption searchOpt)
         {
             try
             {
+                var dirFiles = Enumerable.Empty<string>();
+                if (searchOpt == SearchOption.AllDirectories)
+                {
+                    dirFiles = Directory.EnumerateDirectories(path).SelectMany(x => EnumerateFiles(x, searchPattern, searchOpt));
+                }
+                return dirFiles.Concat(Directory.EnumerateFiles(path, searchPattern));
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Enumerable.Empty<string>();
+            }
+        }
+        public static bool SendDataToServ(string data)
+        {
+            string sURL;
+            sURL = @"http://10.26.204.8/wsinfserv/index.php/recup/" + data;
+            //http://www.microsoft.com http://10.26.204.8/wsinfserv
+            try
+            {
+                WebRequest wrGETURL;
+
+                wrGETURL = WebRequest.Create(sURL);
+
+                WebProxy myProxy = new WebProxy("http://10.254.4.1", 80);//by pass le proxy
+                myProxy.BypassProxyOnLocal = true;
+                Stream objStream;
+                objStream = wrGETURL.GetResponse().GetResponseStream();
+
+                StreamReader objReader = new StreamReader(objStream);
+
+                string sLine = "";
+                int i = 0;
+
+                while (sLine != null)
+                {
+                    i++;
+                    sLine = objReader.ReadLine();
+                    if (sLine != null)
+                        Console.WriteLine("{0}:{1}", i, sLine);
+                }
+                Console.ReadLine();
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        public static void Main(string[] args)
+        {
+            try
+            {
+                string valueEnvoi = "10.26.204.1";
+
+                #region Information du pc en local
                 Console.WriteLine("--------------Information PC-----------------");
                 Console.WriteLine(PingIP);
                 Console.WriteLine("UserName:{0}", Environment.UserDomainName);
                 var userIp = Dns.GetHostEntry(Environment.UserDomainName).AddressList[2].ToString();
                 Console.WriteLine(userIp);
                 Console.ReadLine();
+                #endregion
 
+                #region liste des machines sur le serveurs
+                /*
                 Console.WriteLine("--------------Liste des machines sur le serveurs-----------------");
                 string[] computers = GetComputers();
                 foreach (string computer in computers)
@@ -124,6 +174,10 @@ namespace essaiRecupDonneesReseaux
                     Console.WriteLine(computer);
                 }
                 Console.ReadLine();
+                */
+                #endregion
+
+                #region connection au serveur
                 //--------------Connection Serveur-----------------//
                 //information pour ce connecter au serveur
                 string sUserName = "admini";
@@ -136,7 +190,10 @@ namespace essaiRecupDonneesReseaux
                 ManagementScope scope = new ManagementScope(@"\\10.26.204.1\root\cimv2", opt);// |-> recherche le serveur - remplacer par la recherche d'id
                                                                                               // si l'adresse change recuperer le mot de passe et l'identifiant
                 scope.Connect();
+                #endregion
 
+                #region Liste des service du serveurs
+                /*
                 Console.WriteLine("--------------Liste des services du serveurs-----------------");
                 //declaration des objets
                 ManagementPath mgmtPathProcess = new ManagementPath("Win32_Process");
@@ -155,6 +212,8 @@ namespace essaiRecupDonneesReseaux
                     Console.WriteLine(serviceServeurs);
                 }
                 Console.ReadLine();
+                */
+                #endregion
 
                 Console.WriteLine("--------------Win32_services -> Caption (properties)-----------------");
                 //declaration des objets
@@ -168,102 +227,130 @@ namespace essaiRecupDonneesReseaux
                 ManagementObjectSearcher mosService = new ManagementObjectSearcher(scope, requeteService);
                 ManagementObjectCollection mocService = mosService.Get();
 
+
                 foreach (ManagementObject moService in mocService)
                 {
-                    Console.WriteLine(moService["Name"].ToString() + " " + moService["ErrorControl"].ToString());
-                }
-                Console.ReadLine();
-
-                Console.WriteLine("-------------- utilisation de la methode split-----------------");
-
-                //char[] delimiterChars = { ' ', ',', '.', ':', '\t' };  |-> defini les delimiter utiliser exemple => , ou ; ou . ou etc..
-                char[] delimiterChars = { ';' };
-                string text = "one;two;three;four;five;six;seven";
-                Console.WriteLine("Original text: '{0}'", text);
-
-                string[] words = text.Split(delimiterChars);
-                Console.WriteLine("{0} words in text:", words.Length);
-
-                foreach (string s in words)
-                {
-                    System.Console.WriteLine(s);
-                }
-                Console.ReadLine();
-
-                Console.WriteLine("--------------lecture dans un fichier-----------------");
-
-                String line;
-                try
-                {
-                    //Pass the file path and file name to the StreamReader constructor 
-                    StreamReader streamR = new StreamReader("C:\\Users\\yoann\\Documents\\exemple.txt");
-
-                    //Lire la premiere ligne du fichier Sample.txt 
-                    line = streamR.ReadLine();
-
-                    //Continuer la lecture jusqu'a la fin du fichier 
-                    while (line != null)
+                    string nomService = moService["Name"].ToString();
+                    if (nomService == "Apache2.2" || nomService == "DHCPServer" || nomService == "MySQL")
                     {
-                        char delimitChars = ';';
-                        Console.WriteLine("Original text: '{0}'", line);
-                        string[] mot = text.Split(delimitChars);
-
-                        foreach (string value in mot)
+                        if (moService["ErrorControl"].ToString() == "Normal")
                         {
-                            Console.WriteLine(value);
+                            valueEnvoi += "_" + "1";
+                            Console.WriteLine(valueEnvoi);
                         }
+                        else
+                        {
+                            valueEnvoi += "_" + "0";
+                            Console.WriteLine(valueEnvoi);
+                        }
+                    }
+                }
+                valueEnvoi += "_1_0_1";
+                Console.WriteLine(valueEnvoi);
+                SendDataToServ(valueEnvoi);
 
-                        //write the lie to console window 
-                        Console.WriteLine(line);
-                        //lecture du ligne du texte 
-                        line = streamR.ReadLine();
+            }
+            #region Methode split
+            /*
+            Console.WriteLine("-------------- utilisation de la methode split-----------------");
+
+            //char[] delimiterChars = { ' ', ',', '.', ':', '\t' };  |-> defini les delimiter utiliser exemple => , ou ; ou . ou etc..
+            char[] delimiterChars = { ';' };
+            string text = "one;two;three;four;five;six;seven";
+            Console.WriteLine("Original text: '{0}'", text);
+
+            string[] words = text.Split(delimiterChars);
+            Console.WriteLine("{0} words in text:", words.Length);
+
+            foreach (string s in words)
+            {
+                System.Console.WriteLine(s);
+            }
+            Console.ReadLine();
+            #endregion
+
+            #region lecture fichier
+            Console.WriteLine("--------------lecture dans un fichier-----------------");
+
+            String line;
+            try
+            {
+                //Pass the file path and file name to the StreamReader constructor 
+                StreamReader streamR = new StreamReader("C:\\Users\\yoann\\Documents\\exemple.txt");
+
+                //Lire la premiere ligne du fichier Sample.txt 
+                line = streamR.ReadLine();
+
+                //Continuer la lecture jusqu'a la fin du fichier 
+                while (line != null)
+                {
+                    char delimitChars = ';';
+                    Console.WriteLine("Original text: '{0}'", line);
+                    string[] mot = text.Split(delimitChars);
+
+                    foreach (string value in mot)
+                    {
+                        Console.WriteLine(value);
                     }
 
-                    //Fermiture du fichier 
-                    streamR.Close();
-                    Console.ReadLine();
+                    //write the lie to console window 
+                    Console.WriteLine(line);
+                    //lecture du ligne du texte 
+                    line = streamR.ReadLine();
                 }
-                catch (Exception e)
-                {
-                    Console.WriteLine("Exception: " + e.Message);
-                }
-                finally
-                {
-                    Console.WriteLine("Executing finally block.");
-                }
-                System.Console.ReadKey();
 
-                Console.WriteLine("--------------Nom , Capaciter et espace des disques du serveur-----------------");
-                //declaration des objets
-                ManagementPath mgmtPath = new ManagementPath("Win32_LogicalDisk");
-                ManagementClass classObj = new ManagementClass(null, mgmtPath, null);
-
-                //declaration de la requete : retourne le nom du disque dur du serveur
-                SelectQuery requeteLogicalDisk = new SelectQuery();
-                requeteLogicalDisk.QueryString = "SELECT * FROM Win32_LogicalDisk";
-
-                ManagementObjectSearcher mosLogicalDisk = new ManagementObjectSearcher(scope, requeteLogicalDisk);
-                ManagementObjectCollection mocLogicalDisk = mosLogicalDisk.Get();
-
-                foreach (ManagementObject moLogicalDisk in mocLogicalDisk)
-                {
-                    Console.WriteLine("Nom : " + moLogicalDisk["Name"].ToString() + " Espace libre : " + moLogicalDisk["FreeSpace"].ToString() + " Capaciter : " + moLogicalDisk["Size"].ToString());
-                }
+                //Fermiture du fichier 
+                streamR.Close();
                 Console.ReadLine();
             }
+            catch (Exception e)
+            {
+                Console.WriteLine("Exception: " + e.Message);
+            }
+            finally
+            {
+                Console.WriteLine("Executing finally block.");
+            }
+            System.Console.ReadKey();
+            #endregion
+
+            #region HD
+            Console.WriteLine("--------------Nom , Capaciter et espace des disques du serveur-----------------");
+            //declaration des objets
+            ManagementPath mgmtPath = new ManagementPath("Win32_LogicalDisk");
+            ManagementClass classObj = new ManagementClass(null, mgmtPath, null);
+
+            //declaration de la requete : retourne le nom du disque dur du serveur
+            SelectQuery requeteLogicalDisk = new SelectQuery();
+            requeteLogicalDisk.QueryString = "SELECT * FROM Win32_LogicalDisk";
+
+            ManagementObjectSearcher mosLogicalDisk = new ManagementObjectSearcher(scope, requeteLogicalDisk);
+            ManagementObjectCollection mocLogicalDisk = mosLogicalDisk.Get();
+
+            foreach (ManagementObject moLogicalDisk in mocLogicalDisk)
+            {
+                Console.WriteLine("Nom : " + moLogicalDisk["Name"].ToString() + " Espace libre : " + moLogicalDisk["FreeSpace"].ToString() + " Capaciter : " + moLogicalDisk["Size"].ToString());
+            }
+            Console.ReadLine();
+        }
+        */
+            #endregion
+
             //affiche les messages d'erreur
             #region BLOC_CATCH
             catch (ManagementException Ex)
             {
-                Console.WriteLine(String.Format("erreur :" + Ex.Message));
+                Console.WriteLine(String.Format("erreur : " + Ex.Message));
                 Console.ReadLine();
             }
             catch (Exception Ex)
             {
-                Console.WriteLine(String.Format("erreur :" + Ex.Message));
+                Console.WriteLine(String.Format("erreur : " + Ex.Message));
                 Console.ReadLine();
             }
             #endregion
-        }*/
+        }
     }
 }
+
+
