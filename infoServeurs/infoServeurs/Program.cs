@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Net;
-using System.Net.Sockets;
-using System.Web;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -108,7 +106,7 @@ namespace infoServeurs
                     if (sLine != null)
                         Console.WriteLine("{0}:{1}", i, sLine);
                 }
-                //Console.ReadLine();
+                Console.ReadLine();
                 return true;
             }
             catch
@@ -137,61 +135,35 @@ namespace infoServeurs
                 return result;
             }
         }
-        //
 
+    
         static void Main(string[] args)
         {
-            string ipStart = "";
-            string line;
+            SendDataToServ("Madata_test_test2_0");
+        }
+        /*
+        static void Main(string[] args)
+        {
+            Console.WriteLine(PingIP);
+            Console.WriteLine("UserName:{0}", Environment.UserDomainName);
+            var userIp = Dns.GetHostEntry(Environment.UserDomainName).AddressList[1].ToString();
+            Console.WriteLine(userIp);
+            Console.ReadLine();
 
-            // Read the file and display it line by line.
-            System.IO.StreamReader file =
-                new System.IO.StreamReader(@"test.conf");
-            while ((line = file.ReadLine()) != null)
+            // Write the string to a file.
+            System.IO.StreamWriter file = new System.IO.StreamWriter("test.txt",true);
+            file.WriteLine("User Domain name: {0} User IP: {1}", Environment.UserDomainName, userIp);
+            string[] computers = GetComputers();
+
+            foreach (string computer in computers)
             {
-                System.Console.WriteLine(line);
-                ipStart = ipStart + line;
+                Console.WriteLine(computer);
+                file.WriteLine("Computer : {0} \n", computer);
             }
+            Console.ReadLine();
+
             file.Close();
 
-            
-            string[] ipS = ipStart.Split('_');
-            System.IO.StreamWriter filew = new System.IO.StreamWriter("test.txt", true);
-            foreach (string ip in ipS)
-            {
-                Ping pingSender = new Ping();
-                PingOptions options = new PingOptions();
-                options.DontFragment = true;
-
-                // Create a buffer of 32 bytes of data to be transmitted.
-                string data = "aaaa";
-                byte[] buffer = Encoding.ASCII.GetBytes(data);
-                int timeout = 120;
-                PingReply reply = pingSender.Send(ip, timeout, buffer, options);
-                int statusping;
-                if (reply.Status == IPStatus.Success)
-                {
-                    Console.WriteLine(ip + " : ok");
-                    statusping = 1;
-                }
-                else
-                {
-                    Console.WriteLine(ip + " : echec");
-                    statusping = 0;
-                }
-                try //la reqeute est correctement envoyé au serveur
-                {
-                    SendDataToServ(ip + "_"+ statusping + "_1_1_1_1_1");
-                    Console.WriteLine("envoi au web service ok");
-                }
-                catch //en cas d'echec on enregistre la requete dans un fichier
-                {
-                    Console.WriteLine(ip + "envoi au web service echec");
-                    filew.WriteLine(ip + "_"+ statusping + "_0_0_0_0_0");
-                }
-                file.Close();
-                Console.ReadLine();
-            }
-        }
+        }*/
     }
 }
