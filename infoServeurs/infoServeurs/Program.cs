@@ -49,7 +49,7 @@ namespace infoServeurs
         const int MAX_PREFERRED_LENGTH = -1;
         const int SV_TYPE_WORKSTATION = 1;
         const int SV_TYPE_SERVER = 2;
- 
+
         public static string[] GetComputers()
         {
             ArrayList computers = new ArrayList();
@@ -84,15 +84,17 @@ namespace infoServeurs
         public static bool SendDataToServ(string data)
         {
             string sURL;
-            sURL = @"http://10.26.204.8/wsinfserv/index.php/recup/"+data; 
+            sURL = @"http://10.26.204.8/wsinfserv/index.php/recup/" + data;
             //http://www.microsoft.com http://10.26.204.8/wsinfserv
             try
             {
                 WebRequest wrGETURL;
                 wrGETURL = WebRequest.Create(sURL);
+                wrGETURL.Proxy = null;//by pass le proxy
 
-                WebProxy myProxy = new WebProxy("http://10.254.4.1", 80);//by pass le proxy
-                myProxy.BypassProxyOnLocal = true;
+                //WebProxy myProxy = new WebProxy("http://10.254.4.1", 80);//activer le proxy
+                //myProxy.BypassProxyOnLocal = true; 
+
                 Stream objStream;
                 objStream = wrGETURL.GetResponse().GetResponseStream();
 
@@ -154,7 +156,7 @@ namespace infoServeurs
             }
             file.Close();
 
-            
+
             string[] ipS = ipStart.Split('_');
             System.IO.StreamWriter filew = new System.IO.StreamWriter("test.txt", true);
             foreach (string ip in ipS)
@@ -167,30 +169,41 @@ namespace infoServeurs
                 string data = "aaaa";
                 byte[] buffer = Encoding.ASCII.GetBytes(data);
                 int timeout = 120;
-                PingReply reply = pingSender.Send(ip, timeout, buffer, options);
-                int statusping;
-                if (reply.Status == IPStatus.Success)
+                try
                 {
-                    Console.WriteLine(ip + " : ok");
-                    statusping = 1;
+                    PingReply reply = pingSender.Send(ip, timeout, buffer, options);
+                    int statusping;
+                    if (reply.Status == IPStatus.Success)
+                    {
+                        Console.WriteLine(ip + " : ok");
+                        statusping = 1;
+                    }
+                    else
+                    {
+                        Console.WriteLine(ip + " : echec");
+                        statusping = 0;
+                    }
+                    try //la requete est correctement envoyé au serveur
+                    {
+                        SendDataToServ(ip + "_" + statusping + "_1_1_1_1_1");
+                        Console.WriteLine("envoi au web service ok");
+                    }
+                    catch //en cas d'echec on enregistre la requete dans un fichier
+                    {
+                        Console.WriteLine(ip + "envoi au web service echec");
+                        filew.WriteLine(ip + "_" + statusping + "_0_0_0_0_0");
+                    }
+                    file.Close();
+                    Console.ReadLine();
                 }
-                else
+                #region MyRegion catch pas de co
+                catch
                 {
-                    Console.WriteLine(ip + " : echec");
-                    statusping = 0;
+                    Console.WriteLine("pas de connection");
+                    Console.ReadLine();
                 }
-                try //la reqeute est correctement envoyé au serveur
-                {
-                    SendDataToServ(ip + "_"+ statusping + "_1_1_1_1_1");
-                    Console.WriteLine("envoi au web service ok");
-                }
-                catch //en cas d'echec on enregistre la requete dans un fichier
-                {
-                    Console.WriteLine(ip + "envoi au web service echec");
-                    filew.WriteLine(ip + "_"+ statusping + "_0_0_0_0_0");
-                }
-                file.Close();
-                Console.ReadLine();
+                #endregion
+
             }
         }
     }
