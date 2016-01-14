@@ -21,7 +21,80 @@ namespace infoServeurs
 {
     class Program
     {
-        #region retourne le staut de l'imprimante
+        // retourne le status du switch
+        static public string getStatusSwitch(string ipAdress)
+        {
+            SNMP snmp;
+            int DeviceId = 1;
+            int retries = 1;
+            int TimeoutInMS = 20000;
+            string Result1Str; string status = "";
+            try
+            {
+                string[] ErrorMessageText = new string[8];
+                ErrorMessageText[0] = "service recquis";
+                ErrorMessageText[1] = "Eteinte";
+                ErrorMessageText[2] = "Bourrage papier";
+                ErrorMessageText[3] = "porte ouverte";
+                ErrorMessageText[4] = "pas de toner";
+                ErrorMessageText[5] = "niveau toner bas";
+                ErrorMessageText[6] = "plus de papier";
+                ErrorMessageText[7] = "niveau de papier bas";
+
+                snmp = new SNMP();
+                snmp.Open(ipAdress, "public", retries, TimeoutInMS);//.1.3.6.1.2.1.2.2.1.7.25
+                uint nbPort = snmp.GetAsByte(String.Format(".1.3.6.1.2.1.2.1.0"));
+                snmp.Close();
+                System.Console.WriteLine("nombre de port : " + nbPort);
+
+                for (int i = 1; i <= nbPort; i++)
+                {
+                    snmp = new SNMP();
+                    snmp.Open(ipAdress, "public", retries, TimeoutInMS);//.1.3.6.1.2.1.2.2.1.7.25//.1.3.6.1.2.1.2.1.0//.1.3.6.1.2.1.2.2.1.6.
+                    string adressResult = snmp.Get(".1.3.6.1.2.1.2.2.1.6."+i);
+                    byte[] ba = Encoding.Default.GetBytes(adressResult);
+                    string hexString = BitConverter.ToString(ba);
+                    uint statusResult = snmp.GetAsByte(".1.3.6.1.2.1.2.2.1.8."+i);
+
+                    switch (statusResult)
+                    {
+                        case 1:
+                            Result1Str = "up";
+                            break;
+                        case 2:
+                            Result1Str = "down";
+                            break;
+                        case 3:
+                            Result1Str = "testing";
+                            break;
+                        case 4:
+                            Result1Str = "unknown";
+                            break;
+                        case 5:
+                            Result1Str = "dormant";
+                            break;
+                        case 6:
+                            Result1Str = "notPresent";
+                            break;
+                        case 7:
+                            Result1Str = "lowerLayerDown";
+                            break;
+                        default:
+                            Result1Str = "code inconnu" + statusResult;
+                            break;
+                    }
+                    Console.WriteLine("  port "+i+ " adresse : "+ hexString+" "+ statusResult+" "+Result1Str);
+                    snmp.Close();
+                 }
+            }
+            catch (Exception)
+            {
+                status = "Informations non disponibles...";
+            }
+            return status;
+        }
+
+        // retourne le status de l'imprimante
         static public string getStatus(string ipAdress)
         {
             SNMP snmp;
@@ -92,8 +165,7 @@ namespace infoServeurs
                 status = "Informations non disponibles...";
             }
             return status;
-        } 
-        #endregion
+        }
 
         //retourne le pourcentage d'encre présente dans x toner
         static public string getTonerStatus(string ipAdress, string printerName, int tonerNumber)
@@ -146,7 +218,6 @@ namespace infoServeurs
                 status = remaininglevel.ToString();
                 snmp.Close();
             }
-
             catch (Exception)
             {
                 status = "Informations non disponibles...";
@@ -217,6 +288,8 @@ namespace infoServeurs
 
         static void Main(string[] args)
         {
+            WebProxy myProxy = new WebProxy("http://10.254.4.1", 80);//activer le proxy
+            myProxy.BypassProxyOnLocal = true;
 
             #region lecture des adresse ip à scanner dans le .conf
             string ipStart = "";
@@ -232,12 +305,15 @@ namespace infoServeurs
             }
             file.Close();
             #endregion
+            //info switch
+            string switchstat = getStatusSwitch("10.26.202.15");
+            System.Console.WriteLine("Switch : " + switchstat);
 
             #region Affiche l'etat de l'imprimante et ses toners
             //info imprimante 
-            string printerstat2 = getStatus("10.26.205.5");
-            string printerstat = getTonerStatus("10.26.205.5", "SL - M3820ND", 1);
-            System.Console.WriteLine("Etat imprimante : " + printerstat2 +""+ printerstat);
+            string printerstat = getStatus("10.26.205.5");
+            string tonerstat = getTonerStatus("10.26.205.5", "SD", 1);
+            System.Console.WriteLine("Etat imprimante : " + printerstat +" toner "+ tonerstat+"%");
             // 
             #endregion
 
