@@ -15,76 +15,150 @@ using System.Security;
 using System.Net.NetworkInformation;
 using System.Collections;
 using System.IO;
+using OLEPRNLib;
 
 namespace infoServeurs
 {
     class Program
     {
-
-        [StructLayout(LayoutKind.Sequential)]
-        public struct _SERVER_INFO_100
+        #region retourne le staut de l'imprimante
+        static public string getStatus(string ipAdress)
         {
-            internal int sv100_platform_id;
-            [MarshalAs(UnmanagedType.LPWStr)]
-            internal string sv100_name;
-        }
-
-        [DllImport("Netapi32", SetLastError = true), SuppressUnmanagedCodeSecurityAttribute]
-        public static extern int NetApiBufferFree(IntPtr pBuf);
-
-        [DllImport("Netapi32", CharSet = CharSet.Auto, SetLastError = true), SuppressUnmanagedCodeSecurityAttribute]
-        public static extern int NetServerEnum(
-            string ServerNane,
-            int dwLevel,
-            ref IntPtr pBuf,
-            int dwPrefMaxLen,
-            out int dwEntriesRead,
-            out int dwTotalEntries,
-            int dwServerType,
-            string domain,
-            out int dwResumeHandle
-            );
-
-        const int LVL_100 = 100;
-        const int MAX_PREFERRED_LENGTH = -1;
-        const int SV_TYPE_WORKSTATION = 1;
-        const int SV_TYPE_SERVER = 2;
-
-        public static string[] GetComputers()
-        {
-            ArrayList computers = new ArrayList();
-            IntPtr buffer = IntPtr.Zero, tmpBuffer = IntPtr.Zero;
-            int entriesRead, totalEntries, resHandle;
-            int sizeofINFO = Marshal.SizeOf(typeof(_SERVER_INFO_100));
-
+            SNMP snmp;
+            int DeviceId = 1;
+            int retries = 1;
+            int TimeoutInMS = 20000;
+            string Result1Str; string status;
             try
             {
-                int ret = NetServerEnum(null, LVL_100, ref buffer, MAX_PREFERRED_LENGTH, out entriesRead, out totalEntries, SV_TYPE_WORKSTATION | SV_TYPE_SERVER, null, out resHandle);
-                if (ret == 0)
-                {
-                    for (int i = 0; i < totalEntries; i++)
-                    {
-                        tmpBuffer = new IntPtr((int)buffer + (i * sizeofINFO));
+                string[] ErrorMessageText = new string[8];
+                ErrorMessageText[0] = "service recquis";
+                ErrorMessageText[1] = "Eteinte";
+                ErrorMessageText[2] = "Bourrage papier";
+                ErrorMessageText[3] = "porte ouverte";
+                ErrorMessageText[4] = "pas de toner";
+                ErrorMessageText[5] = "niveau toner bas";
+                ErrorMessageText[6] = "plus de papier";
+                ErrorMessageText[7] = "niveau de papier bas";
 
-                        _SERVER_INFO_100 svrInfo = (_SERVER_INFO_100)Marshal.PtrToStructure(tmpBuffer, typeof(_SERVER_INFO_100));
-                        computers.Add(svrInfo.sv100_name);
+                snmp = new SNMP();
+                snmp.Open(ipAdress, "public", retries, TimeoutInMS);
+                uint WarningErrorBits = snmp.GetAsByte(String.Format("25.3.5.1.2.{0}",
+                                                       DeviceId));
+                uint statusResult = snmp.GetAsByte(String.Format("25.3.2.1.5.{0}",
+                                                  DeviceId));
+
+                switch (statusResult)
+                {
+                    case 2:
+                        Result1Str = "OK";
+                        break;
+                    case 3:
+                        Result1Str = "Avertissement: ";
+                        break;
+                    case 4:
+                        Result1Str = "Test: ";
+                        break;
+                    case 5:
+                        Result1Str = "Hors de fonctionnement: ";
+                        break;
+                    default:
+                        Result1Str = "Code Inconnu: " + statusResult;
+                        break;
+                }
+                string Str = "";
+
+                if ((statusResult == 3 || statusResult == 5))
+                {
+                    int Mask = 1;
+                    int NumMsg = 0;
+                    for (int i = 0; i < 8; i++)
+                    {
+                        if ((WarningErrorBits & Mask) == Mask)
+                        {
+                            if (Str.Length > 0)
+                                Str += ", ";
+                            Str += ErrorMessageText[i];
+                            NumMsg = NumMsg + 1;
+                        }
+                        Mask = Mask * 2;
                     }
                 }
-                else
-                    throw new Win32Exception(ret);
+                status = Result1Str + Str;
+                snmp.Close();
             }
-            finally
+            catch (Exception)
             {
-                NetApiBufferFree(buffer);
+                status = "Informations non disponibles...";
+            }
+            return status;
+        } 
+        #endregion
+
+        //retourne le pourcentage d'encre présente dans x toner
+        static public string getTonerStatus(string ipAdress, string printerName, int tonerNumber)
+        {
+            int retries = 1;
+            int TimeoutInMS = 20000;
+            int tonerNumberDell = 0;
+            string status;
+            uint currentlevel;
+            uint maxlevel;
+            try
+            {
+                SNMP snmp = new SNMP();
+                snmp.Open(ipAdress, "public",retries, TimeoutInMS);
+                switch (tonerNumber)
+                {
+                    case 1:
+                        tonerNumberDell = 4;
+                        break;
+                    case 2:
+                        tonerNumberDell = 3;
+                        break;
+                    case 3:
+                        tonerNumberDell = 1;
+                        break;
+                    case 4:
+                        tonerNumberDell = 2;
+                        break;
+                }
+                switch (printerName)
+                {
+                    case "Dell 3010 cn":
+                        currentlevel =
+         Convert.ToUInt32(snmp.Get(".1.3.6.1.2.1.43.11.1.1.9.1." +
+                          tonerNumberDell.ToString()));
+                        maxlevel =
+         Convert.ToUInt32(snmp.Get(".1.3.6.1.2.1.43.11.1.1.8.1." +
+                          tonerNumberDell.ToString()));
+                        break;
+                    default:
+                        currentlevel =
+                     Convert.ToUInt32(snmp.Get(".1.3.6.1.2.1.43.11.1.1.9.1." +
+                                      tonerNumber.ToString()));
+                        maxlevel =
+                     Convert.ToUInt32(snmp.Get(".1.3.6.1.2.1.43.11.1.1.8.1." +
+                                      tonerNumber.ToString()));
+                        break;
+                }
+                uint remaininglevel = (currentlevel * 100 / maxlevel);
+                status = remaininglevel.ToString();
+                snmp.Close();
             }
 
-            return (string[])computers.ToArray(typeof(string));
+            catch (Exception)
+            {
+                status = "Informations non disponibles...";
+            }
+            return status;
         }
+
         //fonction d'envoi de données au web service; affiche la réponse de la requete http dans la console
         public static bool SendDataToServ(string data)
         {
             string sURL;
-            sURL = @"http://10.26.204.8/wsinfserv/index.php/recup/" + data;
+            sURL = @"http://10.26.204.8/wsinfserv/index.php/recup" + data;
             //http://www.microsoft.com http://10.26.204.8/wsinfserv
             try
             {
@@ -119,7 +193,7 @@ namespace infoServeurs
             }
         }
         //
-
+        
         public static bool PingIP
         {
             get
@@ -143,20 +217,31 @@ namespace infoServeurs
 
         static void Main(string[] args)
         {
+
+            #region lecture des adresse ip à scanner dans le .conf
             string ipStart = "";
             string line;
-
             // Read the file and display it line by line.
             System.IO.StreamReader file =
                 new System.IO.StreamReader(@"test.conf");
+            System.Console.WriteLine("contenu du fichier conf: ");
             while ((line = file.ReadLine()) != null)
             {
-                System.Console.WriteLine(line);
+                System.Console.WriteLine("\n"+line);
                 ipStart = ipStart + line;
             }
             file.Close();
+            #endregion
 
+            #region Affiche l'etat de l'imprimante et ses toners
+            //info imprimante 
+            string printerstat2 = getStatus("10.26.205.5");
+            string printerstat = getTonerStatus("10.26.205.5", "SL - M3820ND", 1);
+            System.Console.WriteLine("Etat imprimante : " + printerstat2 +""+ printerstat);
+            // 
+            #endregion
 
+            #region test ping des ip chargé et envoi au web serv
             string[] ipS = ipStart.Split('_');
             System.IO.StreamWriter filew = new System.IO.StreamWriter("test.txt", true);
             foreach (string ip in ipS)
@@ -185,25 +270,23 @@ namespace infoServeurs
                     }
                     try //la requete est correctement envoyé au serveur
                     {
-                        SendDataToServ(ip + "_" + statusping + "_1_1_1_1_1");
+                        SendDataToServ("info/" + ip + "_" + statusping + "_1_1_1_1_1");
                         Console.WriteLine("envoi au web service ok");
                     }
                     catch //en cas d'echec on enregistre la requete dans un fichier
                     {
-                        Console.WriteLine(ip + "envoi au web service echec");
+                        Console.WriteLine("info/" + ip + "envoi au web service echec");
                         filew.WriteLine(ip + "_" + statusping + "_0_0_0_0_0");
                     }
                     file.Close();
                     Console.ReadLine();
                 }
-                #region MyRegion catch pas de co
                 catch
                 {
                     Console.WriteLine("pas de connection");
                     Console.ReadLine();
-                }
+                } 
                 #endregion
-
             }
         }
     }

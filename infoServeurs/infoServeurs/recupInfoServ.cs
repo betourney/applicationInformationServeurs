@@ -149,8 +149,10 @@ namespace essaiRecupDonneesReseaux
                 return false;
             }
         }
-       
-        public static void Main(string[] args)
+
+        public static void second(string[] args)
+        #region Main
+        //public static void Main(string[] args)
         {
             try
             {
@@ -351,6 +353,7 @@ namespace essaiRecupDonneesReseaux
             #endregion
         }
     }
+    #endregion
 }
 
 
