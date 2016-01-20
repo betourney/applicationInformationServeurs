@@ -445,7 +445,28 @@ namespace infoServeurs
             #endregion
         }
 
-
+        //le retourne True si le serveur passe en parametre peut-etre "pinger" sinon retourne false
+        public static bool Ping(string address)
+        {
+            bool pingOk = false;
+            try
+            {
+                ManagementObjectSearcher searcher = new ManagementObjectSearcher("root\\CIMV2", "SELECT * FROM Win32_PingStatus where address = '" + address + "''");
+                foreach (ManagementObject queryObj in searcher.Get())
+                {
+                    if (queryObj["StatusCode"].ToString() != null)
+                    {
+                        pingOk = true;
+                        break;
+                    }
+                }
+            }
+            catch (ManagementException e)
+            {
+                Console.WriteLine("An error occurred while querying for WMI data: " + e.Message);
+            }
+            return pingOk;
+        }
 
         #region Objects needed for the Win32 functions
 #pragma warning disable 1591
@@ -592,7 +613,7 @@ namespace infoServeurs
 
             #region test ping des ip chargé et envoi au web serv
             string[] ipS = ipStart.Split('_');
-            System.IO.StreamWriter filew = new System.IO.StreamWriter("test.txt", true);
+            StreamWriter filew = new System.IO.StreamWriter("test.txt", true);
             foreach (string ip in ipS)
             {
                 Ping pingSender = new Ping();
