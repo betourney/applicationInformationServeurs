@@ -531,6 +531,31 @@ namespace infoServeurs
 #pragma warning restore 1591
         #endregion
 
+        public static void recuperationFichierLinux(string path, string user, string password, List<String> typeExtension)
+        {
+            using (new NetworkConnection(path, new NetworkCredential(user, password)))
+            {
+                //File.ReadLines(@"\\10.26.204.253\Web\index.php");
+                //Console.Write(File.ReadLines(@"\\10.26.204.253\Web\index.php"));
+                string[] extensions = { "*.mp3", "*.mp4", "*.avi" };//a recup du fichier config A faire
+                foreach (string extension in extensions)
+                {
+                    try
+                    {
+                        foreach (string searchfile in Directory.EnumerateFiles(path, extension, SearchOption.AllDirectories))
+                        {
+                            Console.WriteLine(searchfile);
+                            //a envoyer via requete recupfile/
+                        }
+                    }
+                    catch
+                    {
+                        Console.WriteLine("prob acces sur " + extension);
+                    }
+                }
+            }
+        }//rajouter la methode 
+
         public static bool PingIP
         {
             get
@@ -550,7 +575,35 @@ namespace infoServeurs
                 return result;
             }
         }
-        //
+
+        public static string readConfig(string info)
+        {
+
+            int counter = 0;
+            string line;
+            List<string> contenuConfig = new List<string>();
+
+            List<string> adressServeur = new List<string>();
+            List<string> adressSwitch = new List<string>();
+            List<string> adressImprimante = new List<string>();
+            List<string> ExtensionFichier = new List<string>();
+            List<string> listeUserMdp = new List<string>();
+            List<string> listePathFichier = new List<string>();
+            // Read the file and display it line by line.
+            StreamReader file = new StreamReader(@"c:\test.txt");
+            while ((line = file.ReadLine()) != null)
+            {
+                contenuConfig.Add(line);
+            }
+            file.Close();
+            foreach (string value in contenuConfig)
+            {
+                if (true)
+                {
+
+                }
+            }
+        }
 
         static void Main(string[] args)
         {
@@ -600,7 +653,8 @@ namespace infoServeurs
             #endregion
 
             #region affiche les dossiers recuperer sur le dossier linux
-            recuperationFichierLinux(@"\\10.26.204.253\Web\", "formateur", "centrenord");
+            List<string> lesExtension = new List<string>();
+            recuperationFichierLinux(@"\\10.26.204.253\Web\", "formateur", "centrenord",lesExtension);//devra chercher dans le fichiers config
             #endregion
 
             #region affiche des info sur les disques dur du serveur
