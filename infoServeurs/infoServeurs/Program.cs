@@ -31,6 +31,16 @@ namespace infoServeurs
             string Result1Str; string status = "";
             try
             {
+                string[] ErrorMessageText = new string[8];
+                ErrorMessageText[0] = "service recquis";
+                ErrorMessageText[1] = "Eteinte";
+                ErrorMessageText[2] = "Bourrage papier";
+                ErrorMessageText[3] = "porte ouverte";
+                ErrorMessageText[4] = "pas de toner";
+                ErrorMessageText[5] = "niveau toner bas";
+                ErrorMessageText[6] = "plus de papier";
+                ErrorMessageText[7] = "niveau de papier bas";
+
                 snmp = new SNMP();
                 snmp.Open(ipAdress, "public", retries, TimeoutInMS);//.1.3.6.1.2.1.2.2.1.7.25
                 uint nbPort = snmp.GetAsByte(String.Format(".1.3.6.1.2.1.2.1.0"));
@@ -382,6 +392,92 @@ namespace infoServeurs
             }
         }
 
+        //retourne le nom ,la capactite et l'espace libre des disques durs de chaque serveurs
+        public static void DisqueDurServeur(ManagementScope scope)
+        {
+            #region HD
+            string reponse = "";
+            //declaration des objets
+            ManagementPath mgmtPath = new ManagementPath("Win32_LogicalDisk");
+            ManagementClass classObj = new ManagementClass(null, mgmtPath, null);
+
+            //declaration de la requete : retourne le nom du disque dur du serveur
+            SelectQuery requeteLogicalDisk = new SelectQuery();
+            requeteLogicalDisk.QueryString = "SELECT * FROM Win32_LogicalDisk where DriveType = 3";
+
+            ManagementObjectSearcher mosLogicalDisk = new ManagementObjectSearcher(scope, requeteLogicalDisk);
+            ManagementObjectCollection mocLogicalDisk = mosLogicalDisk.Get();
+
+            foreach (ManagementObject moLogicalDisk in mocLogicalDisk)
+            {
+                reponse = moLogicalDisk["Name"].ToString() + "_" + moLogicalDisk["FreeSpace"].ToString() + "_" + moLogicalDisk["Size"].ToString();
+                Console.WriteLine(reponse);
+
+                //SendDataToServ(reponse);
+                //exception pour les disque l'envoi se fera a partir d'ici
+            }
+            #endregion
+        }
+
+        //retourne l'etat des services de chaque serveurs
+        public static string ServiceServeur(ManagementScope scope)
+        {
+            #region Etat des services
+            string valueEnvoi = "";
+            //declaration des objets
+            ManagementPath mgmtPathService = new ManagementPath("Win32_Service");
+            ManagementClass classObjService = new ManagementClass(null, mgmtPathService, null);
+
+            //declaration de la requete : retourne le nom du disque dur du serveur
+            SelectQuery requeteService = new SelectQuery();
+            requeteService.QueryString = "SELECT * FROM Win32_Service";
+
+            ManagementObjectSearcher mosService = new ManagementObjectSearcher(scope, requeteService);
+            ManagementObjectCollection mocService = mosService.Get();
+
+            foreach (ManagementObject moService in mocService)
+            {
+                string nomService = moService["Name"].ToString();
+                if (nomService == "Apache2.2" || nomService == "DHCPServer" || nomService == "MySQL")
+                {
+                    if (moService["ErrorControl"].ToString() == "Normal")
+                    {
+                        valueEnvoi += "_" + "1";
+                    }
+                    else
+                    {
+                        valueEnvoi += "_" + "0";
+                    }
+                }
+            }
+            Console.WriteLine(valueEnvoi);
+            return valueEnvoi;
+            #endregion
+        }
+
+        //le retourne True si le serveur passe en parametre peut-etre "pinger" sinon retourne false
+        public static bool Ping(string address)
+        {
+            bool pingOk = false;
+            try
+            {
+                ManagementObjectSearcher searcher = new ManagementObjectSearcher("root\\CIMV2", "SELECT * FROM Win32_PingStatus where address = '" + address + "''");
+                foreach (ManagementObject queryObj in searcher.Get())
+                {
+                    if (queryObj["StatusCode"].ToString() != null)
+                    {
+                        pingOk = true;
+                        break;
+                    }
+                }
+            }
+            catch (ManagementException e)
+            {
+                Console.WriteLine("An error occurred while querying for WMI data: " + e.Message);
+            }
+            return pingOk;
+        }
+
         #region Objects needed for the Win32 functions
 #pragma warning disable 1591
 
@@ -445,6 +541,31 @@ namespace infoServeurs
 #pragma warning restore 1591
         #endregion
 
+        public static void recuperationFichierLinux(string path, string user, string password, List<String> typeExtension)
+        {
+            using (new NetworkConnection(path, new NetworkCredential(user, password)))
+            {
+                //File.ReadLines(@"\\10.26.204.253\Web\index.php");
+                //Console.Write(File.ReadLines(@"\\10.26.204.253\Web\index.php"));
+                string[] extensions = { "*.mp3", "*.mp4", "*.avi" };//a recup du fichier config A faire
+                foreach (string extension in extensions)
+                {
+                    try
+                    {
+                        foreach (string searchfile in Directory.EnumerateFiles(path, extension, SearchOption.AllDirectories))
+                        {
+                            Console.WriteLine(searchfile);
+                            //a envoyer via requete recupfile/
+                        }
+                    }
+                    catch
+                    {
+                        Console.WriteLine("prob acces sur " + extension);
+                    }
+                }
+            }
+        }//rajouter la methode 
+
         public static bool PingIP
         {
             get
@@ -464,11 +585,38 @@ namespace infoServeurs
                 return result;
             }
         }
-        //
+
+        public static string readConfigs(string info)
+        {
+
+            int counter = 0;
+            string line;
+            List<string> contenuConfig = new List<string>();
+
+            List<string> adressServeur = new List<string>();
+            List<string> adressSwitch = new List<string>();
+            List<string> adressImprimante = new List<string>();
+            List<string> ExtensionFichier = new List<string>();
+            List<string> listeUserMdp = new List<string>();
+            List<string> listePathFichier = new List<string>();
+            // Read the file and display it line by line.
+            StreamReader file = new StreamReader(@"c:\test.txt");
+            while ((line = file.ReadLine()) != null)
+            {
+                contenuConfig.Add(line);
+            }
+            file.Close();
+            foreach (string value in contenuConfig)
+            {
+                if (true)
+                {
+
+                }
+            }
+        }
 
         static void Main(string[] args)
         {
-
             WebProxy myProxy = new WebProxy("http://10.254.4.1", 80);//activer le proxy
             myProxy.BypassProxyOnLocal = true;
 
@@ -476,32 +624,59 @@ namespace infoServeurs
             string ipStart = "";
             string line;
             // Read the file and display it line by line.
-            System.IO.StreamReader file =
-                new System.IO.StreamReader(@"test.conf");
-            System.Console.WriteLine("contenu du fichier conf: ");
+            StreamReader file = new StreamReader(@"test.conf");
+            Console.WriteLine("contenu du fichier conf: ");
             while ((line = file.ReadLine()) != null)
             {
-                System.Console.WriteLine("\n"+line);
+                Console.WriteLine("\n"+line);
                 ipStart = ipStart + line;
             }
             file.Close();
             #endregion
 
+            #region connection au serveur avec ManagementScope et WMI
+            //--------------Connection Serveur-----------------//
+            //information pour ce connecter au serveur
+            string sUserName = "admini";
+            string sPwd = "6gdp9";
+            ConnectionOptions opt = new ConnectionOptions();
+            opt.Authority = "ntlmdomain:";
+            opt.Username = sUserName;
+            opt.Password = sPwd;
+            // connection au serveur
+            ManagementScope scope = new ManagementScope(@"\\10.26.204.1\root\cimv2", opt);// |-> recherche le serveur - remplacer par la recherche d'id                                                                           // si l'adresse change recuperer le mot de passe et l'identifiant
+            scope.Connect();
+            #endregion
+
+            #region Affiche les stats du switch
             //info switch
-            string switchstat = getStatusSwitch("10.66.202.1");
+            string switchstat = getStatusSwitch("10.26.202.15");
             System.Console.WriteLine("Switch : " + switchstat);
+            #endregion
 
             #region Affiche l'etat de l'imprimante et ses toners
             //info imprimante 
             string printerstat = getStatus("10.26.205.5");
             string tonerstat = getTonerStatus("10.26.205.5", "SD", 1);
-            System.Console.WriteLine("Etat imprimante : " + printerstat +" toner "+ tonerstat+"%");
-            // 
+            System.Console.WriteLine("Etat imprimante : " + printerstat + " toner " + tonerstat + "%");
+            #endregion
+
+            #region affiche les dossiers recuperer sur le dossier linux
+            List<string> lesExtension = new List<string>();
+            recuperationFichierLinux(@"\\10.26.204.253\Web\", "formateur", "centrenord",lesExtension);//devra chercher dans le fichiers config
+            #endregion
+
+            #region affiche des info sur les disques dur du serveur
+            DisqueDurServeur(scope);
+            #endregion
+
+            #region affiche l'etat des Services du Serveur
+            ServiceServeur(scope); 
             #endregion
 
             #region test ping des ip chargé et envoi au web serv
             string[] ipS = ipStart.Split('_');
-            System.IO.StreamWriter filew = new System.IO.StreamWriter("test.txt", true);
+            StreamWriter filew = new System.IO.StreamWriter("test.txt", true);
             foreach (string ip in ipS)
             {
                 Ping pingSender = new Ping();
@@ -541,36 +716,12 @@ namespace infoServeurs
                 }
                 catch
                 {
-                    file.Close();
                     Console.WriteLine("pas de connection");
                     Console.ReadLine();
                 }
                 #endregion
-            }
 
-            #region recupération fichier sur serveur linux
-            using (new NetworkConnection(@"\\10.26.204.253\Apprentissage_nord\Picardie", new NetworkCredential("formateur", "centrenord")))
-            {
-                File.ReadLines(@"\\10.26.204.253\Web\index.php");
-                Console.Write(File.ReadLines(@"\\10.26.204.253\Web\index.php"));
-                string[] extensions = { "*.png", "*.php" };//a recup du fichier config
-                foreach (string extension in extensions)
-                {
-                    try
-                    {
-                        foreach (string searchfile in Directory.EnumerateFiles(@"\\10.26.204.253\Web\", extension, SearchOption.AllDirectories))
-                        {
-                            Console.WriteLine(searchfile);
-                            //a envoyer via requete recupfile/
-                        }
-                    }
-                    catch
-                    {
-                        Console.WriteLine("prob acces sur " + extension);
-                    }
-                }
-            } 
-            #endregion
+            }  
         }
     }
 }
