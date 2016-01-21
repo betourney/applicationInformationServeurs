@@ -586,7 +586,7 @@ namespace infoServeurs
             }
         }
 
-        public static string readConfig(string info)
+        public static string readConfigs(string info)
         {
 
             int counter = 0;
