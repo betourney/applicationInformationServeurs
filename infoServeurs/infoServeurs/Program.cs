@@ -84,7 +84,7 @@ namespace infoServeurs
             return status;
         }
 
-        // retourne le status de l'imprimante
+        // retourne le statut de l'imprimante
         static public string getStatus(string ipAdress)
         {
             SNMP snmp;
