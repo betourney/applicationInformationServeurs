@@ -31,6 +31,16 @@ namespace infoServeurs
             string Result1Str; string status = "";
             try
             {
+                string[] ErrorMessageText = new string[8];
+                ErrorMessageText[0] = "service recquis";
+                ErrorMessageText[1] = "Eteinte";
+                ErrorMessageText[2] = "Bourrage papier";
+                ErrorMessageText[3] = "porte ouverte";
+                ErrorMessageText[4] = "pas de toner";
+                ErrorMessageText[5] = "niveau toner bas";
+                ErrorMessageText[6] = "plus de papier";
+                ErrorMessageText[7] = "niveau de papier bas";
+
                 snmp = new SNMP();
                 snmp.Open(ipAdress, "public", retries, TimeoutInMS);//.1.3.6.1.2.1.2.2.1.7.25
                 uint nbPort = snmp.GetAsByte(String.Format(".1.3.6.1.2.1.2.1.0"));
@@ -607,7 +617,6 @@ namespace infoServeurs
 
         static void Main(string[] args)
         {
-
             WebProxy myProxy = new WebProxy("http://10.254.4.1", 80);//activer le proxy
             myProxy.BypassProxyOnLocal = true;
 
@@ -641,8 +650,8 @@ namespace infoServeurs
 
             #region Affiche les stats du switch
             //info switch
-            string switchstat = getStatusSwitch("10.66.202.1");
-            System.Console.WriteLine("Switch : " + switchstat); 
+            string switchstat = getStatusSwitch("10.26.202.15");
+            System.Console.WriteLine("Switch : " + switchstat);
             #endregion
 
             #region Affiche l'etat de l'imprimante et ses toners
@@ -707,7 +716,6 @@ namespace infoServeurs
                 }
                 catch
                 {
-                    file.Close();
                     Console.WriteLine("pas de connection");
                     Console.ReadLine();
                 }
